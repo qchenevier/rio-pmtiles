@@ -1,0 +1,17 @@
+LICENSE
+README.rst
+pyproject.toml
+setup.py
+rio_pmtiles/__init__.py
+rio_pmtiles/worker.py
+rio_pmtiles.egg-info/PKG-INFO
+rio_pmtiles.egg-info/SOURCES.txt
+rio_pmtiles.egg-info/dependency_links.txt
+rio_pmtiles.egg-info/entry_points.txt
+rio_pmtiles.egg-info/not-zip-safe
+rio_pmtiles.egg-info/requires.txt
+rio_pmtiles.egg-info/top_level.txt
+rio_pmtiles/scripts/__init__.py
+rio_pmtiles/scripts/cli.py
+tests/test_cli.py
+tests/test_mod.py

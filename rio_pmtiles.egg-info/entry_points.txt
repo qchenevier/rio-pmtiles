@@ -1,0 +1,2 @@
+[rasterio.rio_plugins]
+pmtiles = rio_pmtiles.scripts.cli:pmtiles
