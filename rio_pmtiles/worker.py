@@ -3,14 +3,14 @@
 import logging
 import warnings
 
+import mercantile
+import rasterio
 from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
 from rasterio.transform import from_bounds as transform_from_bounds
 from rasterio.warp import reproject, transform_bounds
 from rasterio.windows import Window
 from rasterio.windows import from_bounds as window_from_bounds
-import mercantile
-import rasterio
 
 TILES_CRS = "EPSG:3857"
 
@@ -27,7 +27,15 @@ def init_worker(
     exclude_empties=True,
     max_zoom=None,
 ):
-    global base_kwds, filename, resampling, open_options, warp_options, creation_options, exclude_empty_tiles, max_zoom_level
+    global \
+        base_kwds, \
+        filename, \
+        resampling, \
+        open_options, \
+        warp_options, \
+        creation_options, \
+        exclude_empty_tiles, \
+        max_zoom_level
     resampling = Resampling[resampling_method]
     base_kwds = profile.copy()
     filename = path
@@ -56,7 +64,15 @@ def process_tile(tile):
         Image bytes corresponding to the tile.
 
     """
-    global base_kwds, resampling, filename, open_options, warp_options, creation_options, exclude_empty_tiles, max_zoom_level
+    global \
+        base_kwds, \
+        resampling, \
+        filename, \
+        open_options, \
+        warp_options, \
+        creation_options, \
+        exclude_empty_tiles, \
+        max_zoom_level
 
     # Determine overview level to use
     temp_src = rasterio.open(filename)
@@ -77,10 +93,13 @@ def process_tile(tile):
         overview_level = best_overview
 
     if overview_level is not None:
-        open_options["OVERVIEW_LEVEL"] = overview_level
+        # Create a local copy to avoid modifying the global open_options
+        tile_open_options = open_options.copy()
+        tile_open_options["OVERVIEW_LEVEL"] = overview_level
+    else:
+        tile_open_options = open_options
 
-    with rasterio.open(filename, **open_options) as src:
-
+    with rasterio.open(filename, **tile_open_options) as src:
         bbox = mercantile.xy_bounds(tile)
 
         kwds = base_kwds.copy()
@@ -111,9 +130,7 @@ def process_tile(tile):
         log.info("Reprojecting tile: tile=%r", tile)
 
         with MemoryFile() as memfile:
-
             with memfile.open(**kwds) as tmp:
-
                 # determine window of source raster corresponding to the tile
                 # image, with small buffer at edges
                 try:
@@ -144,7 +161,9 @@ def process_tile(tile):
                         tile,
                     )
 
-                num_threads = int(warp_options.pop("num_threads", 2))
+                # Create a local copy of warp_options to avoid side effects
+                tile_warp_options = warp_options.copy()
+                num_threads = int(tile_warp_options.pop("num_threads", 2))
 
                 reproject(
                     rasterio.band(src, bindexes),
@@ -155,7 +174,7 @@ def process_tile(tile):
                     dst_alpha=dst_alpha,
                     num_threads=num_threads,
                     resampling=resampling,
-                    **warp_options
+                    **tile_warp_options,
                 )
 
             return tile, memfile.read()
